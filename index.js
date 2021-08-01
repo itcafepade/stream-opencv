@@ -1,6 +1,5 @@
 const express = require('express')
 const cors = require('cors')
-// const routes = require('./routes/index')
 const cv = require('opencv4nodejs-prebuilt');
 require('dotenv').config()
 
@@ -16,27 +15,51 @@ const io = require('socket.io')(server, {
 app.use(express.json())
 
 app.use(cors())
-// app.use('/', routes);
 
 app.post('/setStreamValue', (req, res) => {
-    process.env.streaming = !JSON.parse(process.env.streaming);
-    if (!JSON.parse(process.env.streaming)) {
-        io.emit('streaming', false)
-    } else {
-        io.emit('streaming', true)
+
+    if (req.body.camara == 'camara0') {
+        process.env.streamingCam0 = !JSON.parse(process.env.streamingCam0);
+
+        if (JSON.parse(process.env.streamingCam0)) {
+            io.emit('streamingCam0', false)
+        } else {
+            io.emit('streamingCam0', true)
+        }
+
+        console.log(`Valor streaming Cam 0: ${process.env.streamingCam0}`)
+
+        res.json({
+            message: 'success',
+            streaming: JSON.parse(process.env.streamingCam0),
+        })
     }
-    console.log(`Valor streaming: ${process.env.streaming}`)
-    res.json({
-        message: 'success',
-        streaming: JSON.parse(process.env.streaming),
-    })
+
+
+    if (req.body.camara == 'camara1') {
+        process.env.streamingCam1 = !JSON.parse(process.env.streamingCam1);
+
+        if (JSON.parse(process.env.streamingCam1)) {
+            io.emit('streamingCam1', false)
+        } else {
+            io.emit('streamingCam1', true)
+        }
+
+        console.log(`Valor streaming Cam 1: ${process.env.streamingCam1}`)
+
+        res.json({
+            message: 'success',
+            streaming: JSON.parse(process.env.streamingCam1),
+        })
+    }
 })
 
 app.get('/getStreamValue', (req, res) => {
 
     res.json({
         mensaje: 'exito',
-        streaming: JSON.parse(process.env.streaming),
+        streamingCam0: JSON.parse(process.env.streamingCam0),
+        streamingCam1: JSON.parse(process.env.streamingCam1),
     })
 })
 
@@ -44,16 +67,29 @@ app.get('/getStreamValue', (req, res) => {
  * Stream
  */
 const fps = 20;
-const wCap = new cv.VideoCapture(0);
-wCap.set(cv.CAP_PROP_FRAME_WIDTH, 100)
-wCap.set(cv.CAP_PROP_FRAME_HEIGHT, 80)
+const wCap = new cv.VideoCapture(0); //Webcam 1
+wCap.set(cv.CAP_PROP_FRAME_WIDTH, 40)
+wCap.set(cv.CAP_PROP_FRAME_HEIGHT, 20)
 
 setInterval(() => {
-    if (JSON.parse(process.env.streaming)) {
+    if (JSON.parse(process.env.streamingCam0)) {
         // console.log(process.env.streaming)
         const frame = wCap.read();
-        const image = cv.imencode('.jpg', frame).toString('base64')
-        io.emit('image', image)
+        const image = cv.imencode('.jpeg', frame).toString('base64')
+        io.emit('image-wCap', image)
+    }
+}, 1000 / fps)
+
+const wCap1 = new cv.VideoCapture(1); //Webcam 2
+wCap1.set(cv.CAP_PROP_FRAME_WIDTH, 100)
+wCap1.set(cv.CAP_PROP_FRAME_HEIGHT, 80)
+
+
+setInterval(() => {
+    if (JSON.parse(process.env.streamingCam1)) {
+        const frame = wCap1.read();
+        const image = cv.imencode('.jpeg', frame).toString('base64')
+        io.emit('image-wCap1', image)
     }
 }, 1000 / fps)
 
